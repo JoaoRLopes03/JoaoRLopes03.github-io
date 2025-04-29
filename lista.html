@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checklist de Produtos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            margin: 0;
+            background-image: url(campodegirassol.jpg);
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-attachment: fixed;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .titulo {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .produto,
+        .produto-encontrado,
+        .produto-faltando {
+            margin-bottom: 12px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Só muda o background */
+        .produto {
+            background-color: rgba(255, 255, 255, 0.95);
+        }
+
+        .produto-encontrado {
+            background-color: rgba(255, 87, 87, 0.95);
+        }
+
+        .produto-faltando {
+            background-color: rgba(134, 236, 113, 0.95);
+        }
+
+        input {
+            padding: 8px;
+            font-size: 16px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .alteraPagina {
+            font-weight: bold;
+            margin-top: 20px;
+            padding: 12px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f0f0f0;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .alteraPagina:active {
+            background-color: lightgray;
+        }
+
+        .botao-padrao {
+            font-weight: bold;
+            margin-top: 20px;
+            margin-left: 5px;
+            padding: 12px;
+            width: 23%;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f0f0f0;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .botao-padrao:active {
+            background-color: lightgray;
+        }
+
+        .botaoAcao {
+            font-weight: bold;
+            margin-top: 20px;
+            padding: 12px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f0f0f0;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .botaoAcao:active {
+            background-color: lightgray;
+        }
+
+        .botao-excluir {
+            font-weight: bold;
+            margin-top: 20px;
+            padding: 12px;
+            width: 20%;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f0f0f0;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #distancia {
+            margin-bottom: 60px;   
+        }
+
+        .infoVersao {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 40px;
+            background-color: rgba(0, 0, 0);
+            color: white;
+            text-align: left;
+            padding-left: 10px;
+            display: flex;
+            align-items: center;
+            z-index: 999;
+            font-size: 14px;
+        }
+
+        .total {
+            font-weight: bold;
+            margin-top: 20px;
+            display: inline-block;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f0f0f0;
+            font-size: 16px;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .total span {
+            font-weight: bold;
+        }
+
+        @media (min-width: 600px) {
+            .produto {
+                flex-direction: row;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 10px;
+            }
+
+            input {
+                width: auto;
+                flex: 1;
+            }
+
+            .botao-padrao {
+                width: auto;
+            }
+
+            .total {
+                width: auto;
+            }
+        }
+    </style>
+</head>
+
+<header>
+    <button onclick="window.location.href='index.html'" class="alteraPagina">Acessar carrinho</button>
+</header>
+
+<body>
+    <div class="titulo">
+        <h1>Lista de Compras</h1>
+    </div>
+
+    <div id="produtos-container">
+        <!-- Produtos inseridos dinamicamente -->
+    </div>
+
+    <button class="botaoAcao" onclick="adicionarProduto()">Novo produto</button>
+    <button class="botaoAcao" id="distancia" onclick="removerTodosProdutos()">Limpar Lista</button>
+
+</body>
+
+<footer class="infoVersao">
+    <p>Version 0.12.1</p>
+</footer>
+
+
+<script>
+    let contador = 0;
+
+    function salvarListaNoLocalStorage() {
+        const produtos = [];
+        const container = document.getElementById('produtos-container').children;
+
+        for (let item of container) {
+            const descricao = item.querySelector('input[type="text"]').value;
+            let status = 'produto';
+
+            if (item.classList.contains('produto-encontrado')) status = 'produto-encontrado';
+            if (item.classList.contains('produto-faltando')) status = 'produto-faltando';
+
+            produtos.push({ descricao, status });
+        }
+
+        localStorage.setItem('produtosLista', JSON.stringify(produtos));
+    }
+
+    function carregarListaDoLocalStorage() {
+        const produtos = JSON.parse(localStorage.getItem('produtosLista')) || [];
+
+        for (let i = 0; i < produtos.length; i++) {
+            adicionarProduto(produtos[i]);
+        }
+    }
+
+    function adicionarProduto(dados = null) {
+        contador++;
+
+        const container = document.getElementById('produtos-container');
+
+        const div = document.createElement('div');
+        div.className = dados?.status || 'produto';
+        div.id = `produto${contador}`;
+        div.innerHTML = `
+            <input type="text" id="descricao${contador}" placeholder="Descrição do produto" value="${dados?.descricao || ''}" oninput="salvarListaNoLocalStorage()">
+
+            <div style="display: flex; align-items: center; in gap: 5px; flex-wrap: wrap;">
+                <button class="botao-padrao" onclick="marcarNeutro(${contador})">🔄</button>
+                <button class="botao-padrao" onclick="marcarEncontrado(${contador})">❌</button>
+                <button class="botao-padrao" onclick="marcarFaltando(${contador})">✅</button>
+                <button class="botao-padrao" onclick="removerProduto(${contador})">🗑️</button>
+            </div>
+        `;
+
+        container.appendChild(div);
+    }
+
+    function iniciarProduto() {
+        if (contador === 0) {
+            adicionarProduto()
+        }
+    }
+
+    function marcarEncontrado(id) {
+        const produto = document.getElementById(`produto${id}`);
+        if (produto) {
+            produto.classList.remove('produto-faltando');
+            produto.classList.add('produto-encontrado');
+            salvarListaNoLocalStorage();
+        }
+    }
+
+    function marcarFaltando(id) {
+        const produto = document.getElementById(`produto${id}`);
+        if (produto) {
+            produto.classList.remove('produto-encontrado');
+            produto.classList.add('produto-faltando');
+            salvarListaNoLocalStorage();
+        }
+    }
+
+    function marcarNeutro(id) {
+        const produto = document.getElementById(`produto${id}`);
+        if (produto) {
+            produto.classList.remove('produto-encontrado');
+            produto.classList.remove('produto-faltando');
+            produto.classList.add('produto');
+            salvarListaNoLocalStorage();
+        }
+    }
+
+    function removerProduto(id) {
+        const produto = document.getElementById(`produto${id}`);
+        if (produto) {
+            produto.remove();
+            salvarListaNoLocalStorage();
+        }
+    }
+
+    function removerTodosProdutos() {
+        const confirmar = confirm("Tem certeza que deseja remover todos os produtos da lista?");
+        if (confirmar) {
+            document.getElementById('produtos-container').innerHTML = '';
+            localStorage.removeItem('produtosLista');
+            contador = 0;
+        }
+    }
+
+
+
+    window.onload = () => {
+        carregarListaDoLocalStorage();
+        iniciarProduto();
+    };
+</script>
+
+</script>
+
+</html>
